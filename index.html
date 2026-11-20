@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <div class="ambient-bg" aria-hidden="true"></div>
@@ -17,7 +17,7 @@
     <header class="top-header no-print">
       <div class="header-inner">
         <div class="brand-lockup" id="headerBrandBtn" role="button" tabindex="0" title="Return to VCOT Home">
-          <img src="/assets/vcot-logo.png" alt="Vivekananda College of Technology (VCOT) Logo" class="vcot-logo" />
+          <img src="./assets/vcot-logo.png" alt="Vivekananda College of Technology (VCOT) Logo" class="vcot-logo" />
           <div class="brand-divider"></div>
           <span class="product-name-tag">Career AI Studio</span>
         </div>
@@ -31,6 +31,10 @@
         </nav>
 
         <div class="header-right">
+          <button type="button" id="connectKeyBtn" class="btn-icon-pill hidden" aria-label="Configure Gemini API Key">
+            <span>🔑</span>
+            <span id="connectKeyLabel">Connect Gemini Key</span>
+          </button>
           <button type="button" id="globalMuteBtn" class="btn-icon-pill hidden" aria-label="Toggle Gemini AI Voice">
             <span id="globalMuteIcon">🔊</span>
             <span id="globalMuteLabel">Gemini Voice On</span>
@@ -52,7 +56,7 @@
             </div>
 
             <div class="hero-logo-inline">
-              <img src="/assets/vcot-logo.png" alt="Vivekananda College of Technology" class="hero-vcot-logo" />
+              <img src="./assets/vcot-logo.png" alt="Vivekananda College of Technology" class="hero-vcot-logo" />
             </div>
 
             <h1 id="home-title" class="hero-title">VCOT Career Guidance Agent</h1>
@@ -326,7 +330,7 @@
           <!-- Studio Top Bar -->
           <div class="studio-header">
             <div class="frame-title-group">
-              <img src="/assets/vcot-logo.png" alt="VCOT" class="mini-vcot-logo" />
+              <img src="./assets/vcot-logo.png" alt="VCOT" class="mini-vcot-logo" />
               <div>
                 <div class="frame-brand">VCOT CAREER GUIDANCE AGENT</div>
                 <h2 id="interview-title" class="frame-sub">LIVE VOICE INTERVIEW</h2>
@@ -444,7 +448,7 @@
           <!-- Hero Score Summary -->
           <div class="card completion-hero-card">
             <div class="completion-brand-row">
-              <img src="/assets/vcot-logo.png" alt="VCOT Logo" class="mini-vcot-logo" />
+              <img src="./assets/vcot-logo.png" alt="VCOT Logo" class="mini-vcot-logo" />
               <span class="engine-badge" id="evaluationEngineBadge">Gemini AI Feedback Report</span>
             </div>
 
@@ -554,7 +558,28 @@
     </main>
   </div>
 
-  <script src="/questions.js"></script>
-  <script src="/app.js"></script>
+  <!-- Static Host Gemini Key Modal (Shown only when running without backend server) -->
+  <div id="geminiKeyModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="keyModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="keyModalTitle">🔑 Connect Gemini API Key</h3>
+        <button type="button" id="closeKeyModalBtn" class="modal-close-btn" aria-label="Close">✕</button>
+      </div>
+      <p class="muted-text" style="margin-bottom: 14px;">
+        You are viewing the static GitHub Pages version. Enter a Google Gemini API key to enable natural Gemini AI Voice &amp; AI scoring (stored locally in your browser only).
+      </p>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label for="browserGeminiKeyInput">Gemini API Key</label>
+        <input type="password" id="browserGeminiKeyInput" placeholder="Paste your Gemini API key..." />
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="clearBrowserKeyBtn" class="btn btn-secondary btn-sm">Clear Key</button>
+        <button type="button" id="saveBrowserKeyBtn" class="btn btn-primary btn-sm">Save &amp; Enable Gemini</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./questions.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>

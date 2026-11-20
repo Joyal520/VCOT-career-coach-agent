@@ -4,8 +4,16 @@ const path = require("path");
 const crypto = require("crypto");
 
 const ROOT_DIR = __dirname;
-const PUBLIC_DIR = path.join(ROOT_DIR, "public");
 const TTS_CACHE_DIR = path.join(ROOT_DIR, ".cache", "tts");
+
+const STATIC_ALLOWLIST = new Map([
+  ["/", "index.html"],
+  ["/index.html", "index.html"],
+  ["/styles.css", "styles.css"],
+  ["/questions.js", "questions.js"],
+  ["/app.js", "app.js"],
+  ["/assets/vcot-logo.png", path.join("assets", "vcot-logo.png")],
+]);
 
 try {
   fs.mkdirSync(TTS_CACHE_DIR, { recursive: true });
@@ -1235,14 +1243,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "GET" || req.method === "HEAD") {
-    const safeRelPath = urlPath === "/" ? "index.html" : urlPath.replace(/^\/+/, "");
-    const resolvedPath = path.resolve(PUBLIC_DIR, safeRelPath);
-
-    if (!resolvedPath.startsWith(PUBLIC_DIR)) {
-      res.writeHead(403, { "Content-Type": "text/plain" });
-      return res.end("Forbidden");
+    const allowedRelPath = STATIC_ALLOWLIST.get(urlPath);
+    if (!allowedRelPath) {
+      res.writeHead(404, { "Content-Type": "text/plain" });
+      return res.end("Not Found");
     }
 
+    const resolvedPath = path.join(ROOT_DIR, allowedRelPath);
     fs.readFile(resolvedPath, (err, content) => {
       if (err) {
         if (err.code === "ENOENT") {

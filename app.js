@@ -10,10 +10,13 @@
   } = window.VCOT_INTERVIEW_DATA;
 
   const STEP_ORDER = ["home", "register", "intro", "interview", "report"];
+  const STORAGE_KEY_NAME = "vcot_gemini_api_key";
 
   const state = {
     currentView: "home",
     sessionToken: 0,
+    backendAvailable: true,
+    browserApiKey: localStorage.getItem(STORAGE_KEY_NAME) || "",
     candidate: {
       name: "",
       jobRole: "",
@@ -44,9 +47,18 @@
 
   const headerBrandBtn = document.getElementById("headerBrandBtn");
   const navStepEls = Array.from(document.querySelectorAll("#headerStepper .nav-step"));
+  const connectKeyBtn = document.getElementById("connectKeyBtn");
+  const connectKeyLabel = document.getElementById("connectKeyLabel");
   const globalMuteBtn = document.getElementById("globalMuteBtn");
   const globalMuteIcon = document.getElementById("globalMuteIcon");
   const globalMuteLabel = document.getElementById("globalMuteLabel");
+
+  // Gemini Key Modal (for static hosting like GitHub Pages)
+  const geminiKeyModal = document.getElementById("geminiKeyModal");
+  const closeKeyModalBtn = document.getElementById("closeKeyModalBtn");
+  const browserGeminiKeyInput = document.getElementById("browserGeminiKeyInput");
+  const clearBrowserKeyBtn = document.getElementById("clearBrowserKeyBtn");
+  const saveBrowserKeyBtn = document.getElementById("saveBrowserKeyBtn");
 
   // Home
   const startPracticeBtn = document.getElementById("startPracticeBtn");
@@ -127,11 +139,42 @@
   // =========================================================================
   // Initialization & Navigation
   // =========================================================================
+  let backendCheckPromise = null;
+
   function init() {
     renderCareerRoleChips();
     bindEvents();
     updateMuteUI();
     syncNavStepper("home");
+    backendCheckPromise = detectBackendAvailability();
+  }
+
+  async function detectBackendAvailability() {
+    try {
+      const res = await fetch("./api/health", { cache: "no-store" });
+      const contentType = res.headers.get("content-type") || "";
+      if (res.ok && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data && data.ok) {
+          state.backendAvailable = true;
+          connectKeyBtn.classList.add("hidden");
+          return;
+        }
+      }
+    } catch (e) {
+      // No Node backend reachable (e.g., static GitHub Pages)
+    }
+    state.backendAvailable = false;
+    updateConnectKeyUI();
+  }
+
+  function updateConnectKeyUI() {
+    if (state.backendAvailable) {
+      connectKeyBtn.classList.add("hidden");
+      return;
+    }
+    connectKeyBtn.classList.remove("hidden");
+    connectKeyLabel.textContent = state.browserApiKey ? "Gemini Connected" : "Connect Gemini Key";
   }
 
   function renderCareerRoleChips() {
@@ -216,6 +259,76 @@
     }
   }
 
+  function base64ToWavBlob(b64, mimeType) {
+    const binStr = atob(b64);
+    const bytes = new Uint8Array(binStr.length);
+    for (let i = 0; i < binStr.length; i += 1) {
+      bytes[i] = binStr.charCodeAt(i);
+    }
+    const isRiff =
+      bytes.length >= 12 &&
+      bytes[0] === 82 &&
+      bytes[1] === 73 &&
+      bytes[2] === 70 &&
+      bytes[3] === 70;
+    if (isRiff) {
+      return new Blob([bytes], { type: "audio/wav" });
+    }
+    const rateMatch = String(mimeType || "").match(/rate=(\d+)/i);
+    const sampleRate = rateMatch ? Number(rateMatch[1]) : 24000;
+    const wavHeader = new ArrayBuffer(44);
+    const view = new DataView(wavHeader);
+    const writeStr = (off, str) => {
+      for (let i = 0; i < str.length; i += 1) view.setUint8(off + i, str.charCodeAt(i));
+    };
+    writeStr(0, "RIFF");
+    view.setUint32(4, 36 + bytes.length, true);
+    writeStr(8, "WAVE");
+    writeStr(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeStr(36, "data");
+    view.setUint32(40, bytes.length, true);
+    return new Blob([wavHeader, bytes], { type: "audio/wav" });
+  }
+
+  async function fetchDirectGeminiTtsBlob(cleanText, apiKey) {
+    for (const model of ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"]) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
+            apiKey
+          )}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: cleanText }] }],
+              generationConfig: {
+                responseModalities: ["AUDIO"],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } } },
+              },
+            }),
+          }
+        );
+        if (!res.ok) continue;
+        const data = await res.json();
+        const part = (data?.candidates?.[0]?.content?.parts || []).find((p) => p?.inlineData?.data);
+        if (part?.inlineData?.data) {
+          return base64ToWavBlob(part.inlineData.data, part.inlineData.mimeType);
+        }
+      } catch (e) {
+        // Try next TTS model
+      }
+    }
+    return null;
+  }
+
   function prefetchTtsAudio(text) {
     const clean = (text || "").trim();
     if (!clean) return Promise.resolve(null);
@@ -227,10 +340,20 @@
     }
 
     const promise = (async () => {
+      if (backendCheckPromise) await backendCheckPromise;
+      if (!state.backendAvailable) {
+        if (!state.browserApiKey) return null;
+        const blob = await fetchDirectGeminiTtsBlob(clean, state.browserApiKey);
+        if (!blob) return null;
+        const blobUrl = URL.createObjectURL(blob);
+        clientTtsCache.set(clean, blobUrl);
+        return blobUrl;
+      }
+
       for (let attempt = 0; attempt < 3; attempt += 1) {
         if (attempt > 0) await waitMs(350 * attempt);
         try {
-          const res = await fetch("/api/tts", {
+          const res = await fetch("./api/tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: clean, voice: "Aoede" }),
@@ -291,7 +414,12 @@
 
     if (!blobUrl) {
       state.isSpeaking = false;
-      updateOrbState("idle", "Voice unavailable right now — read question above");
+      updateOrbState(
+        "idle",
+        !state.backendAvailable && !state.browserApiKey
+          ? "Tap 'Connect Gemini Key' in header for voice — read question"
+          : "Voice unavailable right now — read question above"
+      );
       await waitMs(2200);
       return;
     }
@@ -433,7 +561,44 @@
     const blob = new Blob(audioChunks, { type: mimeType || "audio/webm" });
     if (blob.size < 1000) return "";
     const audioBase64 = await blobToBase64(blob);
-    const res = await fetch("/api/transcribe", {
+
+    if (!state.backendAvailable) {
+      if (!state.browserApiKey) return "";
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${encodeURIComponent(
+            state.browserApiKey
+          )}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: "Verbatim English speech transcriber. Return plain words only; empty if silent." }],
+              },
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    { inlineData: { mimeType: blob.type || "audio/webm", data: audioBase64 } },
+                    { text: "Transcribe:" },
+                  ],
+                },
+              ],
+              generationConfig: { temperature: 0.1, thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: 250 },
+            }),
+          }
+        );
+        if (!res.ok) return "";
+        const data = await res.json();
+        const textPart = (data?.candidates?.[0]?.content?.parts || []).find((p) => typeof p.text === "string");
+        return (textPart?.text || "").trim();
+      } catch (e) {
+        return "";
+      }
+    }
+
+    const res = await fetch("./api/transcribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ audioBase64, mimeType: blob.type || "audio/webm" }),
@@ -888,13 +1053,281 @@
     await submitFullInterviewForEvaluation();
   }
 
+  function buildClientFallbackReport(candidate, responses) {
+    const evals = responses.map((r) => {
+      const ans = (r.answer || "").trim();
+      const words = ans.split(/\s+/).filter(Boolean);
+      const wc = words.length;
+      const rScore = wc >= 10 ? 2 : wc >= 4 ? 1.5 : 0.5;
+      const cScore = wc >= 12 ? 2 : wc >= 5 ? 1.5 : 0.5;
+      const gScore = /^[A-Z]/.test(ans) && wc >= 5 ? 2 : 1;
+      const vScore = wc >= 12 ? 1 : 0.5;
+      const pScore = wc >= 18 ? 2 : wc >= 8 ? 1 : 0.5;
+      const fScore = /\b(i can|i am|i enjoy|i believe|for example)\b/i.test(ans) ? 1 : 0.5;
+      const total = Math.round((rScore + cScore + gScore + vScore + pScore + fScore) * 10) / 10;
+      return {
+        id: r.id,
+        topic: r.topic,
+        question: r.question,
+        studentAnswer: ans || "[No answer provided]",
+        score: total,
+        criteria: {
+          relevance: rScore,
+          clarity: cScore,
+          grammar: gScore,
+          vocabulary: vScore,
+          completeness: pScore,
+          confidence: fScore,
+        },
+        feedback:
+          wc >= 14
+            ? `Clear answer for ${r.topic}. Keep pairing your strengths with short real examples.`
+            : `Good start on ${r.topic}. Try expanding into 2 to 3 complete sentences.`,
+        sampleImprovedAnswer: `I am excited to bring my skills and dedication to the ${candidate.jobRole} role, and I always look for ways to learn and help others succeed.`,
+      };
+    });
+
+    const overallScore =
+      Math.round((evals.reduce((s, q) => s + q.score, 0) / Math.max(1, evals.length)) * 10) / 10;
+    const sorted = [...evals].sort((a, b) => b.score - a.score);
+    const best = sorted[0];
+    const weak = sorted[sorted.length - 1];
+    const baseCat = Math.max(1, Math.min(10, Math.round(overallScore)));
+
+    return {
+      candidate,
+      evaluationEngine: "local-fallback",
+      modelUsed: null,
+      overallScore,
+      overallScoreRounded: Math.round(overallScore),
+      categories: {
+        communication: baseCat,
+        confidence: Math.max(1, baseCat - 1),
+        answerQuality: baseCat,
+        vocabulary: baseCat,
+        grammar: baseCat,
+        relevance: baseCat,
+      },
+      confidenceDisclaimer:
+        "Confidence is assessed from written content, clarity, and positive phrasing only. Vocal tone, eye contact, and body language are not evaluated from text transcripts.",
+      strengths: [
+        "You completed all 10 interview questions from start to finish.",
+        `Your responses stayed focused on your ${candidate.jobRole} goal.`,
+        "You communicated your ideas in understandable English.",
+      ],
+      areasToImprove: [
+        "Aim for 2 to 4 complete sentences per answer.",
+        "Include a short real example for teamwork and problem solving.",
+        "Use positive phrasing such as 'I can contribute...' or 'I helped...'.",
+      ],
+      bestAnswer: {
+        questionNumber: best.id,
+        topic: best.topic,
+        question: best.question,
+        studentAnswer: best.studentAnswer,
+        whyItWasGood: `Your response on ${best.topic} was clear, direct, and relevant to ${candidate.jobRole}.`,
+      },
+      answerImprovement: {
+        questionNumber: weak.id,
+        topic: weak.topic,
+        question: weak.question,
+        originalAnswer: weak.studentAnswer,
+        improvedAnswer: weak.sampleImprovedAnswer,
+        whyItIsBetter: `Uses complete sentences and connects your skills directly to the ${candidate.jobRole} role.`,
+      },
+      nextSteps: [
+        "Practise introducing yourself clearly for one minute.",
+        `Learn five common interview vocabulary words for ${candidate.jobRole}.`,
+        "Practise answering questions using complete sentences.",
+        "Prepare one short teamwork example and one problem-solving example.",
+        "Repeat this 10-question interview session after practising.",
+      ],
+      questionEvaluations: evals,
+    };
+  }
+
+  async function evaluateDirectlyWithBrowserGemini(candidate, responses, apiKey) {
+    const schema = {
+      type: "OBJECT",
+      properties: {
+        cats: {
+          type: "OBJECT",
+          properties: {
+            communication: { type: "INTEGER" },
+            confidence: { type: "INTEGER" },
+            answerQuality: { type: "INTEGER" },
+            vocabulary: { type: "INTEGER" },
+            grammar: { type: "INTEGER" },
+            relevance: { type: "INTEGER" },
+          },
+          required: ["communication", "confidence", "answerQuality", "vocabulary", "grammar", "relevance"],
+        },
+        strengths: { type: "ARRAY", items: { type: "STRING" } },
+        areasToImprove: { type: "ARRAY", items: { type: "STRING" } },
+        best: { type: "OBJECT", properties: { qId: { type: "INTEGER" }, reason: { type: "STRING" } }, required: ["qId", "reason"] },
+        improve: {
+          type: "OBJECT",
+          properties: { qId: { type: "INTEGER" }, better: { type: "STRING" }, reason: { type: "STRING" } },
+          required: ["qId", "better", "reason"],
+        },
+        nextSteps: { type: "ARRAY", items: { type: "STRING" } },
+        items: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              id: { type: "INTEGER" },
+              r: { type: "NUMBER" },
+              c: { type: "NUMBER" },
+              g: { type: "NUMBER" },
+              v: { type: "NUMBER" },
+              p: { type: "NUMBER" },
+              f: { type: "NUMBER" },
+              fb: { type: "STRING" },
+              alt: { type: "STRING" },
+            },
+            required: ["id", "r", "c", "g", "v", "p", "f", "fb", "alt"],
+          },
+        },
+      },
+      required: ["cats", "strengths", "areasToImprove", "best", "improve", "nextSteps", "items"],
+    };
+
+    const lines = responses
+      .map((item) => `Q${item.id} [${item.topic}]: ${item.question}\nA: ${(item.answer || "").trim() || "[None]"}`)
+      .join("\n\n");
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${encodeURIComponent(
+        apiKey
+      )}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [
+              {
+                text: "Supportive VCOT Career Guidance assessor. Score 10 answers: r=relevance(0-2), c=clarity(0-2), g=grammar(0-2), v=vocabulary(0-1), p=completeness(0-2), f=confidence-in-text(0-1). cats are overall 0-10 scores.",
+              },
+            ],
+          },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: `Candidate: ${candidate.name} | Role: ${candidate.jobRole} | Level: ${candidate.difficulty}\n\n${lines}` }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.25,
+            responseMimeType: "application/json",
+            responseSchema: schema,
+            thinkingConfig: { thinkingBudget: 0 },
+            maxOutputTokens: 1800,
+          },
+        }),
+      }
+    );
+    if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
+    const data = await res.json();
+    const textPart = (data?.candidates?.[0]?.content?.parts || []).find((p) => typeof p.text === "string");
+    const compact = JSON.parse(textPart.text);
+
+    const questionEvaluations = responses.map((resp, idx) => {
+      const found = (compact.items || []).find((x) => Number(x.id) === resp.id) || compact.items[idx] || {};
+      const criteria = {
+        relevance: Number(found.r) || 0,
+        clarity: Number(found.c) || 0,
+        grammar: Number(found.g) || 0,
+        vocabulary: Number(found.v) || 0,
+        completeness: Number(found.p) || 0,
+        confidence: Number(found.f) || 0,
+      };
+      const score =
+        Math.round(
+          (criteria.relevance +
+            criteria.clarity +
+            criteria.grammar +
+            criteria.vocabulary +
+            criteria.completeness +
+            criteria.confidence) *
+            10
+        ) / 10;
+      return {
+        id: resp.id,
+        topic: resp.topic,
+        question: resp.question,
+        studentAnswer: resp.answer || "[No answer provided]",
+        score,
+        criteria,
+        feedback: found.fb || "",
+        sampleImprovedAnswer: found.alt || "",
+      };
+    });
+
+    const overallScore =
+      Math.round(
+        (questionEvaluations.reduce((s, q) => s + q.score, 0) / Math.max(1, questionEvaluations.length)) * 10
+      ) / 10;
+    const bestQ = questionEvaluations.find((q) => q.id === Number(compact?.best?.qId)) || questionEvaluations[0];
+    const weakQ = questionEvaluations.find((q) => q.id === Number(compact?.improve?.qId)) || questionEvaluations[0];
+
+    return {
+      candidate,
+      evaluationEngine: "gemini",
+      modelUsed: "gemini-3.1-flash-lite",
+      overallScore,
+      overallScoreRounded: Math.round(overallScore),
+      categories: compact.cats,
+      confidenceDisclaimer:
+        "Confidence is assessed from written content, clarity, and positive phrasing only. Vocal tone, eye contact, and body language are not evaluated from text transcripts.",
+      strengths: compact.strengths,
+      areasToImprove: compact.areasToImprove,
+      bestAnswer: {
+        questionNumber: bestQ.id,
+        topic: bestQ.topic,
+        question: bestQ.question,
+        studentAnswer: bestQ.studentAnswer,
+        whyItWasGood: compact.best.reason,
+      },
+      answerImprovement: {
+        questionNumber: weakQ.id,
+        topic: weakQ.topic,
+        question: weakQ.question,
+        originalAnswer: weakQ.studentAnswer,
+        improvedAnswer: compact.improve.better,
+        whyItIsBetter: compact.improve.reason,
+      },
+      nextSteps: compact.nextSteps,
+      questionEvaluations,
+    };
+  }
+
   async function submitFullInterviewForEvaluation() {
     showView("report");
     evaluatingStateCard.classList.remove("hidden");
     reportContentContainer.classList.add("hidden");
 
     try {
-      const response = await fetch("/api/evaluate", {
+      if (!state.backendAvailable) {
+        if (state.browserApiKey) {
+          try {
+            const directReport = await evaluateDirectlyWithBrowserGemini(
+              state.candidate,
+              state.answers,
+              state.browserApiKey
+            );
+            renderFeedbackReport(directReport);
+            return;
+          } catch (directErr) {
+            // Fall through to local rubric report
+          }
+        }
+        renderFeedbackReport(buildClientFallbackReport(state.candidate, state.answers));
+        return;
+      }
+
+      const response = await fetch("./api/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1165,6 +1598,38 @@
     tryAnotherBtn.addEventListener("click", () => {
       state.answers = [];
       showView("register");
+    });
+
+    connectKeyBtn.addEventListener("click", () => {
+      browserGeminiKeyInput.value = state.browserApiKey;
+      geminiKeyModal.classList.remove("hidden");
+      browserGeminiKeyInput.focus();
+    });
+
+    closeKeyModalBtn.addEventListener("click", () => {
+      geminiKeyModal.classList.add("hidden");
+    });
+
+    saveBrowserKeyBtn.addEventListener("click", () => {
+      const val = browserGeminiKeyInput.value.trim();
+      state.browserApiKey = val;
+      if (val) {
+        localStorage.setItem(STORAGE_KEY_NAME, val);
+      } else {
+        localStorage.removeItem(STORAGE_KEY_NAME);
+      }
+      clientTtsCache.clear();
+      updateConnectKeyUI();
+      geminiKeyModal.classList.add("hidden");
+    });
+
+    clearBrowserKeyBtn.addEventListener("click", () => {
+      browserGeminiKeyInput.value = "";
+      state.browserApiKey = "";
+      localStorage.removeItem(STORAGE_KEY_NAME);
+      clientTtsCache.clear();
+      updateConnectKeyUI();
+      geminiKeyModal.classList.add("hidden");
     });
   }
 
