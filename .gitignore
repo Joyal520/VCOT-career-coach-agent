@@ -1,0 +1,13 @@
+# Environment & secrets (NEVER commit .env)
+.env
+.env.*
+!.env.example
+
+# Generated TTS disk cache & dependencies
+.cache/
+node_modules/
+
+# Logs & OS artifacts
+*.log
+.DS_Store
+Thumbs.db

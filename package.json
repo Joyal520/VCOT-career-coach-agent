@@ -1,0 +1,17 @@
+{
+  "name": "vcot-career-guidance-interview",
+  "version": "1.0.0",
+  "description": "VCOT Career Guidance Agent — Structured AI Interview Practice Simulator",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "vcot",
+    "career-guidance",
+    "ai-interview",
+    "gemini"
+  ],
+  "license": "MIT"
+}

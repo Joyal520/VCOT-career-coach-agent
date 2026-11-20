@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VCOT Career Guidance Agent — AI Interview Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="ambient-bg" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <!-- Persistent Product App Header -->
+    <header class="top-header no-print">
+      <div class="header-inner">
+        <div class="brand-lockup" id="headerBrandBtn" role="button" tabindex="0" title="Return to VCOT Home">
+          <img src="/assets/vcot-logo.png" alt="Vivekananda College of Technology (VCOT) Logo" class="vcot-logo" />
+          <div class="brand-divider"></div>
+          <span class="product-name-tag">Career AI Studio</span>
+        </div>
+
+        <nav class="header-stepper" aria-label="Interview Progress Steps" id="headerStepper">
+          <span class="nav-step active" data-step="home">Home</span>
+          <span class="nav-step" data-step="register">Setup</span>
+          <span class="nav-step" data-step="intro">Briefing</span>
+          <span class="nav-step" data-step="interview">Live Studio</span>
+          <span class="nav-step" data-step="report">Report</span>
+        </nav>
+
+        <div class="header-right">
+          <button type="button" id="globalMuteBtn" class="btn-icon-pill hidden" aria-label="Toggle Gemini AI Voice">
+            <span id="globalMuteIcon">🔊</span>
+            <span id="globalMuteLabel">Gemini Voice On</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-container">
+      <!-- =========================================================
+           VIEW 1: PRODUCT LANDING / HOME SCREEN INVITATION
+      ========================================================== -->
+      <section id="view-home" class="view active" aria-labelledby="home-title">
+        <div class="hero-layout">
+          <div class="card hero-main-card">
+            <div class="hero-eyebrow">
+              <span class="eyebrow-dot"></span>
+              VCOT Career Guidance • Voice AI Simulator
+            </div>
+
+            <div class="hero-logo-inline">
+              <img src="/assets/vcot-logo.png" alt="Vivekananda College of Technology" class="hero-vcot-logo" />
+            </div>
+
+            <h1 id="home-title" class="hero-title">VCOT Career Guidance Agent</h1>
+            <p class="hero-subtitle">AI-Powered Real-Time Interview Practice</p>
+
+            <div class="invitation-box">
+              <p class="invitation-lead">Are you ready for your next interview?</p>
+              <p class="invitation-text">
+                Test your interview skills with our AI interviewer. Answer 10 common interview questions,
+                practise speaking confidently, and receive personalized feedback to improve your performance.
+              </p>
+            </div>
+
+            <div class="hero-cta-row">
+              <button type="button" id="startPracticeBtn" class="btn btn-primary btn-hero">
+                <span>🎤 Start Interview Practice</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14"></path>
+                  <path d="m12 5 7 7-7 7"></path>
+                </svg>
+              </button>
+              <div class="hero-meta-note">
+                <span>10 Questions</span>
+                <span>•</span>
+                <span>Natural Gemini Voice</span>
+                <span>•</span>
+                <span>Hands-Free</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Product Preview Mockup -->
+          <div class="hero-preview-column" aria-hidden="true">
+            <div class="preview-device-card">
+              <div class="preview-topbar">
+                <span class="live-chip"><span class="live-dot-sm"></span> LIVE VOICE SESSION</span>
+                <span class="preview-q-badge">Question 4 / 10</span>
+              </div>
+
+              <div class="preview-orb-stage">
+                <div class="ai-orb orb-sm orb-speaking">
+                  <div class="orb-ring ring-1"></div>
+                  <div class="orb-ring ring-2"></div>
+                  <div class="orb-core">
+                    <div class="orb-eq">
+                      <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                  </div>
+                </div>
+                <span class="preview-speaker-label">Gemini AI Interviewer</span>
+              </div>
+
+              <div class="preview-question-bubble">
+                "What are your strengths?"
+              </div>
+
+              <div class="preview-wave-row">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+              </div>
+
+              <div class="preview-score-toast">
+                <div class="toast-icon">📊</div>
+                <div>
+                  <strong>Instant Rubric Report</strong>
+                  <span>Detailed score out of 10 &amp; answer upgrades</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4-Card App Capabilities Grid -->
+        <div class="feature-grid">
+          <div class="feature-item">
+            <div class="feature-icon-badge icon-blue">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+            </div>
+            <div>
+              <strong>10 Structured Questions</strong>
+              <p>Consistent, beginner-friendly questions every student can trust</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon-badge icon-teal">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" x2="12" y1="19" y2="22"></line>
+              </svg>
+            </div>
+            <div>
+              <strong>Real-Time Hands-Free</strong>
+              <p>Zero clicks or typing between turns — just speak naturally</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon-badge icon-indigo">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+              </svg>
+            </div>
+            <div>
+              <strong>Natural Gemini Voice</strong>
+              <p>Warm, encouraging human-like speech with varied feedback</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon-badge icon-emerald">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"></path>
+                <path d="m19 9-5 5-4-4-3 3"></path>
+              </svg>
+            </div>
+            <div>
+              <strong>Personal Coaching Report</strong>
+              <p>6-category scoring rubric, upgraded answers &amp; next steps</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           VIEW 2: CANDIDATE REGISTRATION (ONBOARDING)
+      ========================================================== -->
+      <section id="view-register" class="view" aria-labelledby="register-title">
+        <div class="card form-card">
+          <div class="section-header-center">
+            <span class="step-pill">Candidate Setup</span>
+            <h2 id="register-title">Let's Prepare for Your Interview!</h2>
+            <p class="muted-text">Personalize your session so our Gemini interviewer knows who you are and the role you're aiming for.</p>
+          </div>
+
+          <form id="registrationForm" class="reg-form" novalidate>
+            <div class="form-group">
+              <label for="candidateName">Your Name <span class="required">*</span></label>
+              <div class="input-with-icon">
+                <span class="input-prefix">👤</span>
+                <input
+                  type="text"
+                  id="candidateName"
+                  name="candidateName"
+                  placeholder="e.g., Joy"
+                  autocomplete="name"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="candidateJobRole">Target Job Role <span class="required">*</span></label>
+              <div class="input-with-icon">
+                <span class="input-prefix">💼</span>
+                <input
+                  type="text"
+                  id="candidateJobRole"
+                  name="candidateJobRole"
+                  placeholder="e.g., ICT Teacher"
+                  required
+                />
+              </div>
+              <div class="role-chips-wrapper">
+                <span class="chips-label">Popular VCOT career tracks (tap to fill):</span>
+                <div id="roleChipsContainer" class="role-chips"></div>
+              </div>
+            </div>
+
+            <div class="form-row-two">
+              <div class="form-group">
+                <label for="interviewLanguage">Interview Language</label>
+                <select id="interviewLanguage" name="interviewLanguage">
+                  <option value="English" selected>English (Clear &amp; Encouraging)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="interviewDifficulty">Difficulty</label>
+                <select id="interviewDifficulty" name="interviewDifficulty">
+                  <option value="Beginner" selected>Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="regErrorMsg" class="form-error hidden" role="alert"></div>
+
+            <div class="form-actions">
+              <button type="button" id="backToHomeBtn" class="btn btn-secondary">← Back</button>
+              <button type="submit" class="btn btn-primary btn-lg">Start My Interview →</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           VIEW 3: AI INTERVIEWER BRIEFING / GREEN ROOM
+      ========================================================== -->
+      <section id="view-intro" class="view" aria-labelledby="intro-title">
+        <div class="card intro-card">
+          <div class="interview-topbar">
+            <div class="topbar-badges">
+              <span class="question-badge">Interview Question 1 of 10</span>
+              <span class="voice-engine-tag">Gemini Natural Voice</span>
+            </div>
+            <div class="candidate-meta-pill" id="introCandidateBadge">Candidate: Student</div>
+          </div>
+
+          <div class="interviewer-stage">
+            <div class="ai-orb" id="introAiOrb">
+              <div class="orb-ring ring-1"></div>
+              <div class="orb-ring ring-2"></div>
+              <div class="orb-core">
+                <div class="orb-eq">
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+            <div class="interviewer-status-tag" id="introSpeakingStatus">
+              Preparing Gemini natural voice...
+            </div>
+            <h2 id="intro-title" class="sr-only">AI Interviewer Introduction</h2>
+          </div>
+
+          <div id="introAudioUnlockBox" class="audio-unlock-banner hidden">
+            <span>Tap below if your browser paused automatic playback:</span>
+            <button type="button" id="introPlayAudioBtn" class="btn btn-outline btn-sm">🔊 Play Welcome Audio</button>
+          </div>
+
+          <div class="opening-script-card">
+            <div class="script-header">
+              <span>🗣️ Interviewer Briefing</span>
+              <button type="button" id="replayIntroBtn" class="btn btn-outline btn-sm">
+                🔊 Replay Welcome
+              </button>
+            </div>
+            <div id="openingScriptLines" class="script-lines"></div>
+          </div>
+
+          <div class="realtime-ready-note">
+            <div class="ready-note-icon">🎙️</div>
+            <div>
+              <strong>Hands-Free Real-Time Mode:</strong>
+              Click <em>I Am Ready</em> once and allow microphone access. From Question 1 to Question 10, the AI will speak naturally and automatically listen for your turn — <strong>no clicking or typing needed</strong>.
+            </div>
+          </div>
+
+          <div class="intro-actions">
+            <button type="button" id="backToRegisterBtn" class="btn btn-secondary">← Edit Details</button>
+            <button type="button" id="beginQuestionsBtn" class="btn btn-primary btn-lg">
+              🎤 I Am Ready — Begin Real-Time Interview
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           VIEW 4: REAL-TIME VOICE INTERVIEW STUDIO (HANDS-FREE)
+      ========================================================== -->
+      <section id="view-interview" class="view" aria-labelledby="interview-title">
+        <div class="card studio-card">
+          <!-- Studio Top Bar -->
+          <div class="studio-header">
+            <div class="frame-title-group">
+              <img src="/assets/vcot-logo.png" alt="VCOT" class="mini-vcot-logo" />
+              <div>
+                <div class="frame-brand">VCOT CAREER GUIDANCE AGENT</div>
+                <h2 id="interview-title" class="frame-sub">LIVE VOICE INTERVIEW</h2>
+              </div>
+            </div>
+            <div class="studio-header-right">
+              <span class="live-chip"><span class="live-dot-sm"></span> LIVE</span>
+              <div class="candidate-meta-pill" id="interviewCandidatePill"></div>
+            </div>
+          </div>
+
+          <!-- 10-Step Segmented Studio Progress -->
+          <div class="studio-progress-strip">
+            <div class="studio-progress-meta">
+              <span class="question-badge" id="questionCounterBadge">Question 1 of 10</span>
+              <span class="topic-badge" id="questionTopicBadge">Introduce Yourself</span>
+              <span class="progress-pct-text" id="progressPctLabel">10% Complete</span>
+            </div>
+            <div class="segmented-progress" id="progressSegments"></div>
+          </div>
+
+          <!-- AI Interviewer Centerpiece -->
+          <div class="studio-ai-stage">
+            <div id="liveTurnBadge" class="turn-badge turn-ai">
+              🔊 Gemini AI is speaking...
+            </div>
+
+            <div class="ai-orb" id="interviewAiOrb">
+              <div class="orb-ring ring-1"></div>
+              <div class="orb-ring ring-2"></div>
+              <div class="orb-core">
+                <div class="orb-eq">
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="interviewer-live-status" id="interviewSpeakingStatus">Connecting natural voice...</div>
+
+            <div class="transition-chip" id="transitionPhraseText"></div>
+
+            <div class="studio-question-card">
+              <p class="question-text" id="currentQuestionText"></p>
+            </div>
+          </div>
+
+          <!-- Audio unlock fallback ONLY if browser autoplay policy blocks -->
+          <div id="studioAudioUnlockBox" class="audio-unlock-banner hidden">
+            <span>Browser paused audio playback. Tap once to resume natural voice:</span>
+            <button type="button" id="studioPlayAudioBtn" class="btn btn-primary btn-sm">🔊 Resume AI Voice</button>
+          </div>
+
+          <!-- Student Real-Time Voice & Live Captions Dock -->
+          <div class="studio-voice-dock" id="realtimeListeningStage">
+            <div class="dock-visualizer-row">
+              <div class="mic-live-indicator" id="micLiveIndicator">
+                <span class="mic-live-dot"></span>
+                <span id="micStageTitle">Listening pauses while interviewer speaks</span>
+              </div>
+              <div class="student-voice-meter" id="studentVoiceMeter" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+
+            <div class="live-captions-card" id="liveTranscriptCard">
+              <div class="captions-top">
+                <span>💬 Live Speech Captions</span>
+                <span class="word-counter" id="wordCountBadge">0 words</span>
+              </div>
+              <div class="captions-body">
+                <p id="liveTranscriptText" class="captions-final">Listen to the question first...</p>
+                <p id="liveInterimText" class="captions-interim hidden"></p>
+              </div>
+            </div>
+
+            <div id="silenceCountdownWrapper" class="silence-countdown hidden">
+              <div class="silence-label-row">
+                <span id="silenceCountdownLabel">✨ Great — moving to the next question...</span>
+              </div>
+              <div class="silence-track">
+                <div id="silenceProgressFill" class="silence-fill" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div id="micPermissionAlert" class="form-error hidden" role="alert"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           VIEW 5: LOADING + COMPLETION & AI FEEDBACK REPORT
+      ========================================================== -->
+      <section id="view-report" class="view" aria-labelledby="report-title">
+        <!-- Evaluating State -->
+        <div id="evaluatingStateCard" class="card loading-card hidden">
+          <div class="ai-orb orb-speaking" style="margin: 0 auto 20px;">
+            <div class="orb-ring ring-1"></div>
+            <div class="orb-ring ring-2"></div>
+            <div class="orb-core">
+              <div class="orb-eq">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+          <h2>Analysing Your 10 Interview Answers...</h2>
+          <p class="muted-text">
+            Gemini AI is scoring your clarity, vocabulary, grammar, relevance, and completeness across every question.
+          </p>
+        </div>
+
+        <!-- Final Report Dashboard -->
+        <div id="reportContentContainer" class="report-stack hidden">
+          <!-- Hero Score Summary -->
+          <div class="card completion-hero-card">
+            <div class="completion-brand-row">
+              <img src="/assets/vcot-logo.png" alt="VCOT Logo" class="mini-vcot-logo" />
+              <span class="engine-badge" id="evaluationEngineBadge">Gemini AI Feedback Report</span>
+            </div>
+
+            <div class="completion-hero-grid">
+              <div class="completion-copy">
+                <span class="hero-eyebrow" style="margin-bottom: 12px;">🎉 Interview Completed!</span>
+                <h2 id="report-title" class="completion-heading">Your Interview Performance</h2>
+                <p class="completion-sub">
+                  Well done, <strong id="reportCandidateName">Student</strong>! You completed all 10 questions for the
+                  <strong id="reportJobRole"></strong> practice interview.
+                </p>
+                <div class="overall-score-caption-pill" id="overallScoreCaption">Great Effort!</div>
+              </div>
+
+              <div class="score-gauge-box">
+                <svg class="score-ring-svg" viewBox="0 0 140 140" aria-hidden="true">
+                  <circle class="score-ring-bg" cx="70" cy="70" r="58"></circle>
+                  <circle class="score-ring-progress" id="scoreRingCircle" cx="70" cy="70" r="58"></circle>
+                </svg>
+                <div class="score-gauge-center">
+                  <span class="score-gauge-num" id="overallScoreValue">7.5</span>
+                  <span class="score-gauge-max">/ 10</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6-Category Performance Breakdown -->
+          <div class="card report-card">
+            <h3 class="report-section-title">📊 Performance Breakdown</h3>
+            <div id="categoryBreakdownGrid" class="breakdown-grid"></div>
+            <div class="confidence-note" id="confidenceDisclaimerBox"></div>
+          </div>
+
+          <!-- Strengths & Areas to Improve -->
+          <div class="two-col-grid">
+            <div class="card report-card strength-card">
+              <h3 class="report-section-title">🌟 Your Strengths</h3>
+              <ul id="strengthsList" class="feedback-list"></ul>
+            </div>
+
+            <div class="card report-card improve-card">
+              <h3 class="report-section-title">⚠️ Areas to Improve</h3>
+              <ul id="areasToImproveList" class="feedback-list"></ul>
+            </div>
+          </div>
+
+          <!-- Best Answer Spotlight -->
+          <div class="card report-card best-answer-card">
+            <h3 class="report-section-title">📝 Your Best Answer</h3>
+            <div class="qa-highlight-meta" id="bestAnswerMeta"></div>
+            <blockquote class="student-quote" id="bestAnswerQuote"></blockquote>
+            <p class="highlight-explanation" id="bestAnswerReason"></p>
+          </div>
+
+          <!-- Answer Improvement Comparison -->
+          <div class="card report-card answer-upgrade-card">
+            <h3 class="report-section-title">🔧 Answer Improvement</h3>
+            <div class="qa-highlight-meta" id="improveAnswerMeta"></div>
+            <div class="comparison-grid">
+              <div class="compare-box compare-original">
+                <div class="compare-label">Student's Original Answer</div>
+                <p id="improveOriginalText"></p>
+              </div>
+              <div class="compare-box compare-better">
+                <div class="compare-label">Improved Answer</div>
+                <p id="improveBetterText"></p>
+              </div>
+            </div>
+            <div class="why-better-box">
+              <strong>Why this improved answer is better:</strong>
+              <p id="improveReasonText"></p>
+            </div>
+          </div>
+
+          <!-- Detailed 10-Question Scoring Rubric -->
+          <div class="card report-card">
+            <div class="rubric-header-row">
+              <h3 class="report-section-title">📋 Detailed 10-Question Scoring Rubric</h3>
+              <button type="button" id="toggleAllRubricsBtn" class="btn btn-outline btn-sm no-print">
+                Expand All
+              </button>
+            </div>
+            <p class="muted-text rubric-legend">
+              Each answer is scored out of 10: Relevance (2), Clarity (2), Grammar (2), Vocabulary (1), Completeness (2), Confidence Indicators (1).
+            </p>
+            <div id="questionRubricList" class="rubric-accordion-list"></div>
+          </div>
+
+          <!-- Personalised Improvement Plan -->
+          <div class="card report-card next-steps-card">
+            <h3 class="report-section-title">🗺️ Personalised Improvement Plan — Your Next Steps</h3>
+            <ol id="nextStepsList" class="next-steps-list"></ol>
+          </div>
+
+          <!-- Report Footer Actions -->
+          <div class="report-footer-actions no-print">
+            <button type="button" id="printReportBtn" class="btn btn-secondary btn-lg">
+              🖨️ Print / Save Report
+            </button>
+            <button type="button" id="tryAnotherBtn" class="btn btn-primary btn-lg">
+              🔄 Try Another Interview
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/questions.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
