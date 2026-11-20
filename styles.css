@@ -1379,9 +1379,9 @@ h1, h2, h3, .hero-title, .frame-sub, .completion-heading {
 
 .completion-brand-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 10px;
 }
 
 .engine-badge {
