@@ -11,12 +11,29 @@
 
   const STEP_ORDER = ["home", "register", "intro", "interview", "report"];
   const STORAGE_KEY_NAME = "vcot_gemini_api_key";
+  const SILENT_WAV_DATA_URI =
+    "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+
+  function normalizeApiKey(raw) {
+    return String(raw || "")
+      .replace(/^GEMINI_API_KEY\s*=\s*/i, "")
+      .trim()
+      .replace(/^["']+|["']+$/g, "")
+      .trim();
+  }
+
+  const rawStoredKey = localStorage.getItem(STORAGE_KEY_NAME) || "";
+  const cleanedStoredKey = normalizeApiKey(rawStoredKey);
+  if (rawStoredKey && cleanedStoredKey !== rawStoredKey) {
+    if (cleanedStoredKey) localStorage.setItem(STORAGE_KEY_NAME, cleanedStoredKey);
+    else localStorage.removeItem(STORAGE_KEY_NAME);
+  }
 
   const state = {
     currentView: "home",
     sessionToken: 0,
     backendAvailable: true,
-    browserApiKey: localStorage.getItem(STORAGE_KEY_NAME) || "",
+    browserApiKey: cleanedStoredKey,
     candidate: {
       name: "",
       jobRole: "",
@@ -27,6 +44,7 @@
     voiceMuted: false,
     isSpeaking: false,
     currentAudio: null,
+    sharedAudioEl: new Audio(),
     micStream: null,
     audioContext: null,
     activeCleanupListening: null,
@@ -150,6 +168,13 @@
   }
 
   async function detectBackendAvailability() {
+    const host = window.location.hostname || "";
+    if (window.location.protocol === "file:" || host.endsWith(".github.io")) {
+      state.backendAvailable = false;
+      updateConnectKeyUI();
+      return;
+    }
+
     try {
       const res = await fetch("./api/health", { cache: "no-store" });
       const contentType = res.headers.get("content-type") || "";
@@ -162,7 +187,7 @@
         }
       }
     } catch (e) {
-      // No Node backend reachable (e.g., static GitHub Pages)
+      // No Node backend reachable
     }
     state.backendAvailable = false;
     updateConnectKeyUI();
@@ -209,18 +234,20 @@
     });
   }
 
-  function stopAllActiveMedia() {
+  function stopAllActiveMedia(keepMic = false) {
     state.sessionToken += 1;
     stopSpeaking();
     if (typeof state.activeCleanupListening === "function") {
       state.activeCleanupListening();
       state.activeCleanupListening = null;
     }
-    releaseMicrophone();
+    if (!keepMic) {
+      releaseMicrophone();
+    }
   }
 
-  function showView(viewKey) {
-    stopAllActiveMedia();
+  function showView(viewKey, options = {}) {
+    stopAllActiveMedia(Boolean(options.keepMic));
 
     Object.entries(views).forEach(([key, el]) => {
       el.classList.toggle("active", key === viewKey);
@@ -233,6 +260,17 @@
     introAudioUnlockBox.classList.add("hidden");
     studioAudioUnlockBox.classList.add("hidden");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function unlockSharedAudio() {
+    try {
+      if (!state.isSpeaking && state.sharedAudioEl.paused) {
+        state.sharedAudioEl.src = SILENT_WAV_DATA_URI;
+        state.sharedAudioEl.play().catch(() => {});
+      }
+    } catch (e) {
+      // Ignore unlock failure
+    }
   }
 
   // =========================================================================
@@ -298,7 +336,15 @@
   }
 
   async function fetchDirectGeminiTtsBlob(cleanText, apiKey) {
-    for (const model of ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"]) {
+    const models = [
+      "gemini-3.8-flash-tts",
+      "gemini-3.8-flash-lite-tts",
+      "gemini-3.1-flash-tts-preview",
+      "gemini-2.5-flash-preview-tts",
+    ];
+    for (let i = 0; i < models.length; i += 1) {
+      const model = models[i];
+      if (i > 0) await waitMs(250);
       try {
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
@@ -382,9 +428,11 @@
     if (state.currentAudio) {
       try {
         state.currentAudio.pause();
+        state.currentAudio.onplay = null;
         state.currentAudio.onended = null;
         state.currentAudio.onerror = null;
-        state.currentAudio.src = "";
+        state.currentAudio.removeAttribute("src");
+        state.currentAudio.load();
       } catch (e) {
         // Ignore cleanup errors
       }
@@ -428,12 +476,20 @@
     const unlockBtn = state.currentView === "intro" ? introPlayAudioBtn : studioPlayAudioBtn;
 
     await new Promise((resolve) => {
-      const audio = new Audio(blobUrl);
+      const audio = state.sharedAudioEl;
+      audio.pause();
+      audio.onplay = null;
+      audio.onended = null;
+      audio.onerror = null;
+      audio.src = blobUrl;
       audio.playbackRate = 1.0;
       state.currentAudio = audio;
 
       const finish = () => {
         unlockBox.classList.add("hidden");
+        audio.onplay = null;
+        audio.onended = null;
+        audio.onerror = null;
         state.currentAudio = null;
         state.isSpeaking = false;
         updateOrbState("idle", "Ready");
@@ -968,6 +1024,7 @@
   }
 
   async function beginRealtimeInterview() {
+    unlockSharedAudio();
     beginQuestionsBtn.disabled = true;
     try {
       await ensureMicrophoneAccess();
@@ -981,7 +1038,7 @@
     beginQuestionsBtn.disabled = false;
 
     state.answers = [];
-    showView("interview");
+    showView("interview", { keepMic: true });
     const sessionToken = state.sessionToken;
     runRealtimeQuestionLoop(sessionToken);
   }
@@ -1534,6 +1591,7 @@
     });
 
     startPracticeBtn.addEventListener("click", () => {
+      unlockSharedAudio();
       showView("register");
       candidateNameInput.focus();
     });
@@ -1544,6 +1602,7 @@
 
     registrationForm.addEventListener("submit", (e) => {
       e.preventDefault();
+      unlockSharedAudio();
       const name = candidateNameInput.value.trim();
       const jobRole = candidateJobRoleInput.value.trim();
 
@@ -1565,6 +1624,7 @@
     });
 
     replayIntroBtn.addEventListener("click", () => {
+      unlockSharedAudio();
       speakWithGemini(
         getOpeningScript(state.candidate.name),
         "Gemini AI Interviewer is replaying the welcome...",
@@ -1611,7 +1671,8 @@
     });
 
     saveBrowserKeyBtn.addEventListener("click", () => {
-      const val = browserGeminiKeyInput.value.trim();
+      unlockSharedAudio();
+      const val = normalizeApiKey(browserGeminiKeyInput.value);
       state.browserApiKey = val;
       if (val) {
         localStorage.setItem(STORAGE_KEY_NAME, val);
@@ -1621,6 +1682,14 @@
       clientTtsCache.clear();
       updateConnectKeyUI();
       geminiKeyModal.classList.add("hidden");
+
+      if (val && state.currentView === "intro" && state.candidate.name) {
+        speakWithGemini(
+          getOpeningScript(state.candidate.name),
+          "Gemini AI Interviewer is welcoming you...",
+          state.sessionToken
+        );
+      }
     });
 
     clearBrowserKeyBtn.addEventListener("click", () => {
